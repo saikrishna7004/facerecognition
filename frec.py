@@ -43,7 +43,7 @@ while True:
     face_locations = face_recognition.face_locations(Current_image,  model='cnn')
     face_encodes = face_recognition.face_encodings(Current_image,face_locations)
     for encodeFace,faceLocation in zip(face_encodes,face_locations):
-        # matches = face_recognition.compare_faces(knownEncodes,encodeFace, tolerance=0.9)
+        # matches = face_recognition.compare_faces(knownEncodes,encodeFace, tolerance=0.5)
         matches = face_recognition.compare_faces(knownEncodes,encodeFace)
         faceDis = face_recognition.face_distance(knownEncodes,encodeFace)
         matchIndex = np.argmin(faceDis)
