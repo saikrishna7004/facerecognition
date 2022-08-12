@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify
-import os, cv2, numpy, face_recognition, json
+import os, cv2, numpy, face_recognition, json, io
+from PIL import Image
 import base64
 app = Flask(__name__, template_folder="templates")
 
@@ -24,6 +25,7 @@ def verify():
         print("POST")
         # print(request.json)
         file = request.json['image']
+        print(file[:30])
         base64_decoded = base64.b64decode(file.split(",")[1])
         image_numpy = numpy.frombuffer(base64_decoded, numpy.uint8)
         print(image_numpy)
@@ -33,7 +35,7 @@ def verify():
         print(Current_image.shape)
         face_locations = face_recognition.face_locations(Current_image,  model='cnn')
         face_encodes = face_recognition.face_encodings(Current_image,face_locations)
-        name = "Unknown1"
+        name = "Please align face properly in frame"
         for encodeFace,faceLocation in zip(face_encodes,face_locations):
             # matches = face_recognition.compare_faces(knownEncodes,encodeFace, tolerance=0.5)
             matches = face_recognition.compare_faces(knownEncodes,encodeFace)
@@ -58,7 +60,13 @@ def verify():
             cv2.rectangle(img,(x1,y2-20),(x2,y2),(0,255,0),cv2.FILLED)
             cv2.putText(img,name,(x1+6,y2-6),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,255,255),2)
         # cv2.imwrite("file.jpg", img)
-        return jsonify({'name': name})
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img.astype("uint8"))
+        rawBytes = io.BytesIO()
+        img.save(rawBytes, "JPEG")
+        rawBytes.seek(0)
+        img_base64 = base64.b64encode(rawBytes.read())
+        return jsonify({'name': name, 'image': str(img_base64).replace('=', '')[2:-1]})
     else:
         print("GET")
     return "True"
