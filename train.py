@@ -1,5 +1,6 @@
 import face_recognition, os, cv2
 import numpy as np
+from tqdm import tqdm
 
 images = []
 classNames = []
@@ -15,15 +16,16 @@ for img in os.listdir(path):
 print(classNames)
 def encodeImages(images):
     encodeList = []
-    for img in images:
+    for i in tqdm(range(len(images)), desc="Encoding ", ascii=False, ncols=75):
+        img = images[i]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         encode = face_recognition.face_encodings(img)[0]
-        print(encode)
+        # print(encode)
         encodeList.append(encode)
     faceData = open('faces.dat', 'wb')
     np.save(faceData, encodeList)
     faceData = np.load('faces.dat')
-    print(faceData)
+    # print(faceData)
     return encodeList
 
 encodeImages(images)
