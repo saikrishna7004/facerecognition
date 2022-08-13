@@ -16,7 +16,7 @@ for img in os.listdir(path):
 print(classNames)
 def encodeImages(images):
     encodeList = []
-    for i in tqdm(range(len(images)), desc="Encoding ", ascii=False, ncols=75):
+    for i in tqdm(range(len(images)), desc="Encoding ", ascii=False, ncols=75, colour='green', unit=' Files'):
         img = images[i]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         encode = face_recognition.face_encodings(img)[0]
