@@ -37,8 +37,8 @@ def verify():
         face_encodes = face_recognition.face_encodings(Current_image,face_locations)
         name = "Please align face properly in frame"
         for encodeFace,faceLocation in zip(face_encodes,face_locations):
-            # matches = face_recognition.compare_faces(knownEncodes,encodeFace, tolerance=0.5)
-            matches = face_recognition.compare_faces(knownEncodes,encodeFace)
+            matches = face_recognition.compare_faces(knownEncodes,encodeFace, tolerance=0.5)
+            # matches = face_recognition.compare_faces(knownEncodes,encodeFace)
             faceDis = face_recognition.face_distance(knownEncodes,encodeFace)
             matchIndex = numpy.argmin(faceDis)
 
