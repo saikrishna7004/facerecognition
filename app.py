@@ -2,8 +2,20 @@ from flask import Flask, render_template, request, redirect, jsonify
 import os, cv2, numpy, face_recognition, json, io
 from PIL import Image
 import base64
+from dotenv import load_dotenv
+import pymongo
+
 app = Flask(__name__, template_folder="templates")
 
+
+load_dotenv()
+print("[ Env ]\t\t Loaded Environment Variables")
+
+myclient = pymongo.MongoClient(os.environ['MONGO_URI'])
+print("[ MongoDB ]\t Connected to MongoDB Atlas")
+
+db = myclient['facerec']
+students = db['facerec']
 
 scale = 0.3
 box_multiplier = 1/scale
@@ -13,7 +25,7 @@ for img in os.listdir(path):
     classNames.append(os.path.splitext(img)[0])
 encodes = open('faces.dat', 'rb')
 knownEncodes = numpy.load(encodes)
-print('[ Encode ] Encodings Loaded Successfully')
+print('[ Encode ]\t Encodings Loaded Successfully')
 
 @app.route("/")
 def hello():
@@ -66,6 +78,8 @@ def verify():
         img.save(rawBytes, "JPEG")
         rawBytes.seek(0)
         img_base64 = base64.b64encode(rawBytes.read())
+        s = students.find_one({'JNTUH Roll No': name})
+        name = str(s) if s else name
         return jsonify({'name': name, 'image': str(img_base64).replace('=', '')[2:-1]})
     else:
         print("GET")
