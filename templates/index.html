@@ -6,24 +6,67 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Recognition</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 </head>
 
 <body>
-    <div class="contentarea">
-        <h1>
-            Using Javascript to capture Photo
-        </h1>
-        <div class="camera">
-            <video id="video">Video stream not available.</video>
+    <div class="container mx-4 my-4">
+        <div class="col-md-4 me-2 my-2">
+            <label class="me-3" for="faculty">Period: </label>
+            <div class="btn-group" role="group" id="btnGroup" aria-label="Period">
+                <input type="checkbox" id="btncheck1" autocomplete="off">
+                <label class="mx-1 me-3" for="btncheck1">1</label>
+              
+                <input type="checkbox" id="btncheck2" autocomplete="off">
+                <label class="mx-1 me-3" for="btncheck2">2</label>
+              
+                <input type="checkbox" id="btncheck3" autocomplete="off">
+                <label class="mx-1 me-3" for="btncheck3">3</label>
+              
+                <input type="checkbox" id="btncheck4" autocomplete="off">
+                <label class="mx-1 me-3" for="btncheck4">4</label>
+              
+                <input type="checkbox" id="btncheck5" autocomplete="off">
+                <label class="mx-1 me-3" for="btncheck5">5</label>
+              
+                <input type="checkbox" id="btncheck6" autocomplete="off">
+                <label class="mx-1 me-3" for="btncheck6">6</label>
+            </div>
         </div>
-        <div><button id="startbutton">Take photo</button></div>
-
-        <canvas id="canvas"></canvas>
-        <span class="output">
-            <img id="photo" alt="The screen capture will appear in this box.">
-        </span>
-    </div>Name:
-    <div id="title"></div>
+        <div class="col-md-4 me-2 my-2" id="facultyDiv">
+            <label for="faculty">Faculty: </label>
+            <select class="form-select mt-2" name="faculty" id="faculty">
+                <option value="">-- Select Faculty --</option>
+                <option value="Sundeep">Sundeep</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="col-md-4 me-2 my-2" id="yearDiv"></div>
+        <div class="col-md-4 me-2 my-2" id="secDiv"></div>
+    </div>
+    <div class="container" style="display: none;" id="main">
+        <!-- <h1>Using Javascript to capture Photo</h1> -->
+        <div class="container my-3 d-inline-flex flex-wrap">
+            <div class="mx-1 col-md">
+                <video id="video">Video stream not available.</video>
+            </div>
+            <div class="mx-1 col-md">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="mx-1 col-md">
+                <img id="photo" alt="The screen capture will appear in this box.">
+            </div>
+        </div>
+        <div>
+            <div>
+                <span>Name:</span>
+                <span id="title"></span>
+            </div>
+            <button class="btn btn-primary my-2 me-2" id="startbutton">Take photo</button>
+            <button class="btn btn-primary my-2 me-2" onclick="mark()">Mark Attendance</button>
+            <div style="display: inline;" id="result"></div>
+        </div>
+    </div>
 
     <script>
         var width = 320; // We will scale the photo width to this
@@ -35,6 +78,7 @@
         var canvas = null;
         var photo = null;
         var startbutton = null;
+        var roll = "";
 
         function startup() {
             video = document.getElementById('video');
@@ -101,12 +145,11 @@
                 clearphoto();
             }
         }
-        window.addEventListener('load', startup, false);
-
         const sendData = async () => {
+            result.innerHTML = ''
             const response = await fetch('/verify', {
                 method: "POST",
-                body: JSON.stringify({image: canvas.toDataURL('image/png')}),
+                body: JSON.stringify({ image: canvas.toDataURL('image/png') }),
                 headers: {
                     "Content-Type": "application/json",
                     // "Content-Type": "application/x-www-form-urlencoded",
@@ -114,13 +157,108 @@
             });
             let j = await response.json()
             title.innerHTML = j.name
+            roll = j.name == 'Please align face properly in frame' ? '' : j.name
             console.log(j.name)
-            photo.setAttribute('src', 'data:image/png;base64,'+j.image);
+            photo.setAttribute('src', 'data:image/png;base64,' + j.image);
         };
-    
-        document.body.onkeyup = function(e) {
+        const mark = async () => {
+            if (!roll || roll == "Unknown") return result.innerHTML = `<span style="color: red; font-size: x-large;">✘</span> Try again`
+            let a = []
+            let l = btnGroup.getElementsByTagName('input')
+            for(let i=0; i<l.length; i++){
+                if(l[i].checked){
+                    a.push(i+1)
+                }
+            }
+            const response = await fetch('/mark', {
+                method: "POST",
+                body: JSON.stringify({ 'JNTUH Roll No': roll, 'Period': a, 'Faculty': faculty.value }),
+                headers: {
+                    "Content-Type": "application/json",
+                    // "Content-Type": "application/x-www-form-urlencoded",
+                },
+            });
+            let j = await response.text()
+            if (j == "True") result.innerHTML = `<span style="color: green; font-size: x-large;">✔</span> Done`
+            else if (j == "Already Marked") result.innerHTML = `<span style="color: red; font-size: x-large;">✘</span> Already Marked`
+            else result.innerHTML = `<span style="color: red; font-size: x-large;">✘</span> Try again`
+            console.log(j)
+        }
+        const facultyUpdate = async () => {
+            const response = await fetch('/facultyUpdate', {
+                method: "GET"
+            });
+            let j = await response.json()
+            console.log(j)
+            if(!j.result.length) return facultyDiv.innerHTML=``
+            let facultyText = `
+            <label for="faculty">Faculty: </label>
+            <select class="form-select mt-2" name="faculty" id="faculty" onchange="facultyChange()">
+                <option value="">-- Select Faculty --</option>`
+            j.result.filter((o, i) => i === j.result.indexOf(o)).forEach(e => {
+                facultyText += `<option value="${e}">${e}</option>`
+            })
+            facultyText += `</select>`
+            facultyDiv.innerHTML = facultyText
+        }
+        const facultyChange = async () => {
+            if(!faculty.value) { yearDiv.innerHTML=``; secDiv.innerHTML=``; main.style.display = "none"; return }
+            const response = await fetch('/facultyChange', {
+                method: "POST",
+                body: JSON.stringify({ 'Faculty': faculty.value }),
+                headers: {
+                    "Content-Type": "application/json",
+                    // "Content-Type": "application/x-www-form-urlencoded",
+                },
+            });
+            let j = await response.json()
+            console.log(j)
+            if(!j.result.length) return yearDiv.innerHTML=``
+            let yearText = `
+            <label for="year">Year: </label>
+            <select class="form-select mt-2" name="year" id="year" onchange="yearChange()">
+                <option value="">-- Select Year --</option>`
+            j.result.filter((o, i) => i === j.result.findIndex(oo => o.Year === oo.Year)).forEach(e => {
+                yearText += `<option value="${e.Year}">${e.Year}</option>`
+            })
+            yearText += `</select>`
+            yearDiv.innerHTML = yearText
+            secDiv.innerHTML=``
+        }
+        const yearChange = async () => {
+            if(!year.value) { main.style.display = "none"; secDiv.innerHTML=``; return}
+            const response = await fetch('/yearChange', {
+                method: "POST",
+                body: JSON.stringify({ 'Faculty': faculty.value, 'Year': year.value }),
+                headers: {
+                    "Content-Type": "application/json",
+                    // "Content-Type": "application/x-www-form-urlencoded",
+                },
+            });
+            let j = await response.json()
+            console.log(j)
+            if(!j.result.length) return secDiv.innerHTML=``
+            let secText = `
+            <label for="sec">Section: </label>
+            <select class="form-select mt-2" name="sec" id="sec" onchange="secChange()">
+                <option value="">-- Select Section --</option>`
+            j.result.filter((o, i) => i === j.result.findIndex(oo => o.Section === oo.Section)).forEach(e => {
+                secText += `<option value="${e.Section}">${e.Section}</option>`
+            })
+            secText += `</select>`
+            secDiv.innerHTML = secText
+        }
+        const secChange = async () => {
+            if(!sec.value) return main.style.display = "none"
+            main.style.display = ""
+            startup()
+        }
+        
+        document.body.onkeyup = function (e) {
             if (e.key == " " || e.code == "Space" || e.keyCode == 32 || e.code == "Enter" || e.keyCode == 13) { takepicture() }
         }
+        window.onload = facultyUpdate
+        faculty.addEventListener('change', facultyChange)
     </script>
 </body>
 

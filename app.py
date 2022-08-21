@@ -4,6 +4,7 @@ from PIL import Image
 import base64
 from dotenv import load_dotenv
 import pymongo
+from bson import json_util
 
 app = Flask(__name__, template_folder="templates")
 
@@ -16,6 +17,8 @@ print("[ MongoDB ]\t Connected to MongoDB Atlas")
 
 db = myclient['facerec']
 students = db['facerec']
+attendance = db['attendance']
+faculty = db['faculty']
 
 scale = 0.3
 box_multiplier = 1/scale
@@ -82,8 +85,45 @@ def verify():
         name = str(s) if s else name
         return jsonify({'name': name, 'image': str(img_base64).replace('=', '')[2:-1]})
     else:
-        print("GET")
+        print("Invalid method GET")
     return "True"
+
+@app.route("/mark", methods=['POST'])
+def mark():
+    if request.method == 'POST':
+        roll = request.json['JNTUH Roll No']
+        period = request.json['Period']
+        print(period)
+        faculty = request.json['Faculty']
+        for i in period:
+            print(i)
+            r = "True"
+            if attendance.find_one({"JNTUH Roll No": roll, "Period": i}):
+                continue
+            r = attendance.insert_one({"JNTUH Roll No": roll, "Period": i, "Faculty": faculty}).acknowledged
+        return str(r)
+    return "Invalid Method"
+
+@app.route("/facultyUpdate", methods=['GET'])
+def facultyUpdate():
+    return json.loads(json_util.dumps({"result": faculty.distinct('Faculty')}))
+
+@app.route("/facultyChange", methods=['POST'])
+def facultyChange():
+    if request.method == 'POST':
+        faculty1 = request.json['Faculty']
+        res = faculty.find({"Faculty": faculty1})
+        return json.loads(json_util.dumps({"result": res}))
+    return "Invalid Method"
+
+@app.route("/yearChange", methods=['POST'])
+def yearChange():
+    if request.method == 'POST':
+        faculty1 = request.json['Faculty']
+        year1 = request.json['Year']
+        res = faculty.find({"Faculty": faculty1, "Year": int(year1)})
+        return json.loads(json_util.dumps({"result": res}))
+    return "Invalid Method"
 
 if __name__ == "__main__":
     app.run(debug=True)
