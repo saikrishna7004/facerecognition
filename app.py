@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, jsonify
 import os, cv2, numpy, face_recognition, json, io
 from PIL import Image
@@ -95,12 +96,13 @@ def mark():
         period = request.json['Period']
         print(period)
         faculty = request.json['Faculty']
+        r = "True"
         for i in period:
             print(i)
-            r = "True"
-            if attendance.find_one({"JNTUH Roll No": roll, "Period": i}):
+            if attendance.find_one({"JNTUH Roll No": roll, "Period": i, "Date": str(datetime.today().date())}):
+                print("Exists")
                 continue
-            r = attendance.insert_one({"JNTUH Roll No": roll, "Period": i, "Faculty": faculty}).acknowledged
+            r = attendance.insert_one({"JNTUH Roll No": roll, "Period": i, "Faculty": faculty, "Date": str(datetime.today().date())}).acknowledged
         return str(r)
     return "Invalid Method"
 
